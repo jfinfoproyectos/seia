@@ -994,6 +994,50 @@ function EvaluationContent() {
                       overflowY: 'auto'
                     }}
                     spellCheck={true}
+                    onKeyDown={(e) => {
+                      // Prevenir Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A
+                      if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'a')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                      }
+                      // Prevenir F12, Ctrl+Shift+I, Ctrl+U
+                      if (e.key === 'F12' || 
+                          (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+                          (e.ctrlKey && e.key === 'u')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                      }
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return false;
+                    }}
+                    onCopy={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return false;
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return false;
+                    }}
+                    onCut={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return false;
+                    }}
+                    onDragStart={(e) => {
+                      e.preventDefault();
+                      return false;
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      return false;
+                    }}
                   />
                 </div>
               )}
@@ -1141,6 +1185,50 @@ function EvaluationContent() {
                         overflowY: 'auto'
                       }}
                       spellCheck={true}
+                      onKeyDown={(e) => {
+                        // Prevenir Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A
+                        if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'a')) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          return false;
+                        }
+                        // Prevenir F12, Ctrl+Shift+I, Ctrl+U
+                        if (e.key === 'F12' || 
+                            (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+                            (e.ctrlKey && e.key === 'u')) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          return false;
+                        }
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                      }}
+                      onCopy={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                      }}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                      }}
+                      onCut={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                      }}
+                      onDragStart={(e) => {
+                        e.preventDefault();
+                        return false;
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        return false;
+                      }}
                     />
                   </div>
                 )}
