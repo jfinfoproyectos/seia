@@ -401,7 +401,7 @@ function EvaluationContent() {
 
     try {
       if (currentQuestion.type && currentQuestion.type.toLowerCase() === 'code') {
-        const language = JSON.parse(currentQuestion.answer || '{}').language || 'javascript'
+        const language = currentQuestion.language || 'javascript'
 
         const result = await getAIFeedback(
           currentAnswer.answer,
