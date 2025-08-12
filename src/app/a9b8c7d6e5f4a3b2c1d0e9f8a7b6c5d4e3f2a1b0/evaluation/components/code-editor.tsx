@@ -3,6 +3,17 @@ import { useMonacoConfig } from '@/app/a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0/
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { editor } from 'monaco-editor';
 
+// Declaración de tipo para window.monaco
+declare global {
+  interface Window {
+    monaco: {
+      editor: {
+        setTheme: (theme: string) => void;
+      };
+    };
+  }
+}
+
 // Carga diferida del editor Monaco
 const MonacoEditor = dynamic(
   () => import('@monaco-editor/react').then((mod) => mod.default),
@@ -79,6 +90,28 @@ export const CodeEditor = ({ value, onChange, language, height = '100%' }: CodeE
     }
   }, [isEditorReady, editorError]);
 
+  // Actualizar tema del editor cuando cambie el tema de la aplicación
+  useEffect(() => {
+    if (isEditorReady && editorRef.current && window.monaco) {
+      try {
+        window.monaco.editor.setTheme(currentTheme);
+      } catch (error) {
+        console.error('[CodeEditor] Error al actualizar tema:', error);
+      }
+    }
+  }, [currentTheme, isEditorReady]);
+
+  // Función para formatear el código
+  const formatCode = useCallback(() => {
+    if (editorRef.current && isEditorReady) {
+      try {
+        editorRef.current.getAction('editor.action.formatDocument')?.run();
+      } catch (error) {
+        console.error('[CodeEditor] Error al formatear código:', error);
+      }
+    }
+  }, [isEditorReady]);
+
   if (editorError) {
     return (
       <div className="w-full h-full rounded-lg overflow-hidden">
@@ -103,7 +136,7 @@ export const CodeEditor = ({ value, onChange, language, height = '100%' }: CodeE
 
   return (
     <div className="absolute inset-0 mx-3 sm:mx-4">
-      <div className="w-full h-full border border-input rounded-md bg-transparent shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-1 focus-within:ring-ring overflow-hidden" style={{ padding: '1rem' }}>
+      <div className="w-full h-full border border-input rounded-md bg-transparent shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-1 focus-within:ring-ring overflow-hidden relative">
         <MonacoEditor
           height={height}
           language={language}
@@ -111,7 +144,6 @@ export const CodeEditor = ({ value, onChange, language, height = '100%' }: CodeE
           onChange={(value) => handleChange(value || '')}
           options={{
             ...getEditorOptions(window.innerWidth < 640),
-            padding: { top: 0, bottom: 0 },
           }}
           theme={currentTheme}
           defaultValue=""
@@ -125,6 +157,9 @@ export const CodeEditor = ({ value, onChange, language, height = '100%' }: CodeE
               // Definir temas personalizados primero
               defineCustomThemes(monaco);
               
+              // Aplicar el tema después de definir los temas personalizados
+              monaco.editor.setTheme(currentTheme);
+              
               editorRef.current = editor;
               setIsEditorReady(true);
 
@@ -133,7 +168,6 @@ export const CodeEditor = ({ value, onChange, language, height = '100%' }: CodeE
                   const isMobile = window.innerWidth < 640;
                   editor.updateOptions({
                     ...getEditorOptions(isMobile),
-                    padding: { top: 8, bottom: 8 },
                   });
                 } catch (error) {
                   console.error('[CodeEditor] Error al actualizar opciones:', error);
@@ -142,7 +176,6 @@ export const CodeEditor = ({ value, onChange, language, height = '100%' }: CodeE
 
               // Configurar opciones del editor para deshabilitar copiar/pegar
               editor.updateOptions({ 
-                padding: { top: 8, bottom: 8 },
                 // Deshabilitar acciones de copiar/pegar
                 contextmenu: false,
                 // Deshabilitar selección múltiple
@@ -242,6 +275,17 @@ export const CodeEditor = ({ value, onChange, language, height = '100%' }: CodeE
             }
           }}
         />
+        
+        {/* Texto de formato en la esquina inferior derecha */}
+        {isEditorReady && (
+          <div 
+            className="absolute bottom-2 right-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none transition-colors duration-200 bg-background/80 backdrop-blur-sm px-2 py-1 rounded border border-border/50 hover:border-border"
+            onClick={formatCode}
+            title="Formatear código"
+          >
+            Formatear
+          </div>
+        )}
       </div>
     </div>
   );

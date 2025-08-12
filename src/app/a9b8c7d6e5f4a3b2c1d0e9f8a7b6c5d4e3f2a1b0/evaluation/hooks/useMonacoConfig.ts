@@ -278,7 +278,7 @@ export const useMonacoConfig = () => {
         mouseWheelZoom: true,
         readOnly: false,
         domReadOnly: false,
-        contextmenu: true, // Deshabilitar menú contextual por seguridad
+        contextmenu: false, // Deshabilitar menú contextual por seguridad
         lineNumbers: 'on' as const,
         automaticLayout: true,
         scrollBeyondLastLine: false,
@@ -294,7 +294,7 @@ export const useMonacoConfig = () => {
           enabled: true
         },
         guides: {
-          bracketPairs: true,
+          bracketPairs: false,
           indentation: true
         },
         suggest: {

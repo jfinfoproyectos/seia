@@ -24,6 +24,7 @@ type Question = {
   id: number
   text: string
   type: string
+  language?: string | null
   answer?: string | null
   helpUrl?: string | null
 }
@@ -728,13 +729,9 @@ function EvaluationContent() {
 
   // Determinar el lenguaje de programación para preguntas de código
   let language = 'javascript'
-  if (currentQuestion && currentQuestion.type && currentQuestion.type.toLowerCase() === 'code' && currentQuestion.answer) {
-    try {
-      const answerData = JSON.parse(currentQuestion.answer)
-      language = answerData.language || 'javascript'
-    } catch (e) {
-      console.error('Error al parsear el campo answer:', e)
-    }
+  if (currentQuestion && currentQuestion.type && currentQuestion.type.toLowerCase() === 'code') {
+    // Obtener el lenguaje directamente del campo language de la pregunta
+    language = currentQuestion.language || 'javascript'
   }
 
   return (
