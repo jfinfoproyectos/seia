@@ -36,7 +36,7 @@ export default function DownloadPage() {
       version: "v1.0.0",
       size: "16.2 MB",
       requirements: "Windows 10 o superior",
-      downloadUrl: "https://drive.google.com/file/d/1JLN_UAftVdlnBLtlhlZS-suJ98TJROfL/view?usp=sharing",
+      downloadUrl: "https://drive.google.com/file/d/1HXlkR-iOIeNp69kRVrCWir7gWpRCPdQm/view?usp=sharing",
       color: "bg-blue-500",
       description: "Aplicación de escritorio para Windows 10, 11 (64-bit)"
     },
