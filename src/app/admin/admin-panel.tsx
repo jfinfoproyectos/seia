@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { Home, FileText, Calendar, Settings, PanelLeftClose, Menu, PenTool, Users, BarChart2, Folder } from 'lucide-react';
+import { Home, FileText, Calendar, Settings, PanelLeftClose, Menu, PenTool, Users, Folder } from 'lucide-react';
 import '@/app/globals.css';
 import { UserMenu } from '@/components/auth/UserMenu';
 
@@ -15,7 +15,6 @@ const navItems = [
   { href: '/admin/users', label: 'Usuarios', icon: Users },
   { href: '/admin/evaluations', label: 'Evaluaciones', icon: FileText },
   { href: '/admin/schedules', label: 'Horarios', icon: Calendar },
-  { href: '/admin/reports', label: 'Reportes', icon: BarChart2 },
 ];
 
 export function AdminPanel({ children }: { children: React.ReactNode }) {

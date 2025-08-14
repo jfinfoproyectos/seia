@@ -9,7 +9,7 @@ import { LANGUAGE_OPTIONS } from '@/lib/constants/languages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 
-import { AlertCircle, CheckCircle, Clock, HelpCircle, Loader2, Send, Sparkles, XCircle, PenTool, Columns, TabletSmartphone } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, HelpCircle, Loader2, Send, Sparkles, XCircle, PenTool, Columns, TabletSmartphone, MessageSquare } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ThemeToggle from '@/components/theme/ThemeToggle'
@@ -95,6 +95,7 @@ function EvaluationContent() {
   const [isPageHidden, setIsPageHidden] = useState(false);
   const [viewMode, setViewMode] = useState<'columns' | 'tabs'>('columns');
   const [activeTab, setActiveTab] = useState<'question' | 'answer'>('question');
+  const [lastFeedback, setLastFeedback] = useState<{[questionId: number]: {success: boolean; message: string; details?: string; grade?: number}} | null>(null);
 
   // Usar el hook para manejar la navegación de preguntas
   const {
@@ -338,6 +339,19 @@ function EvaluationContent() {
     setIsSubmitDialogOpen(true)
   }, [evaluation, uniqueCode, email, firstName, lastName, submissionId])
 
+  // Función para mostrar la última retroalimentación
+  const showLastFeedback = useCallback(() => {
+    if (!evaluation) return
+    
+    const currentQuestion = evaluation.questions[currentQuestionIndex]
+    const feedback = lastFeedback?.[currentQuestion.id]
+    
+    if (feedback) {
+      setEvaluationResult(feedback)
+      setIsResultModalOpen(true)
+    }
+  }, [evaluation, currentQuestionIndex, lastFeedback])
+
   // Enviar la evaluación completa
   const handleSubmitEvaluation = useCallback(async () => {
     if (!evaluation || !submissionId) return;
@@ -446,6 +460,13 @@ function EvaluationContent() {
           details: result.feedback,
           grade: result.grade
         }
+        
+        // Guardar la retroalimentación para esta pregunta
+        setLastFeedback(prev => ({
+          ...prev,
+          [currentQuestion.id]: newResult
+        }))
+        
         setEvaluationResult(newResult)
         setIsResultModalOpen(true)
       } else {
@@ -491,6 +512,13 @@ function EvaluationContent() {
           details: result.feedback,
           grade: result.grade
         }
+        
+        // Guardar la retroalimentación para esta pregunta
+        setLastFeedback(prev => ({
+          ...prev,
+          [currentQuestion.id]: newResult
+        }))
+        
         setEvaluationResult(newResult)
         setIsResultModalOpen(true)
       }
@@ -626,38 +654,6 @@ function EvaluationContent() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
-
-  // Efecto para detectar cuando la página está oculta y actualizar el título
-  useEffect(() => {
-    let titleInterval: NodeJS.Timeout;
-    const originalTitle = evaluation?.title || 'Evaluación';
-
-    const handleVisibilityChange = () => {
-      setIsPageHidden(document.hidden);
-      
-      if (document.hidden) {
-        // Cuando la página está oculta, alternar el título más rápidamente
-        let showWarning = true;
-        titleInterval = setInterval(() => {
-          document.title = showWarning ? '🚨 ¡ALERTA! ¡Vuelve a la evaluación!' : '⚠️ ¡No abandones la evaluación!';
-          showWarning = !showWarning;
-        }, 800); // Reducido a 800ms para un parpadeo más rápido
-      } else {
-        // Cuando la página está visible, restaurar el título original
-        clearInterval(titleInterval);
-        document.title = originalTitle;
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Limpiar el intervalo cuando el componente se desmonte
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(titleInterval);
-      document.title = originalTitle;
-    };
-  }, [evaluation?.title]);
 
   // Renderizado principal
 
@@ -934,6 +930,27 @@ function EvaluationContent() {
                       {LANGUAGE_OPTIONS.find(opt => opt.value === language)?.label || language}
                     </span>
                   )}
+                  {/* Botón para ver última retroalimentación */}
+                  {lastFeedback?.[currentQuestion.id] && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={showLastFeedback}
+                            className="h-7 text-xs px-2"
+                          >
+                            <MessageSquare className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Ver última retroalimentación
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  
                   <Button
                     size="sm"
                     variant="default"
@@ -1007,10 +1024,26 @@ function EvaluationContent() {
                         return false;
                       }
                     }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      return false;
+                    onContextMenu={() => {
+                      // Permitir el menú contextual pero interceptar acciones específicas
+                      
+                      // Crear un observer para interceptar las acciones del menú contextual
+                      setTimeout(() => {
+                        const handleContextMenuAction = (event: Event) => {
+                          const selection = window.getSelection()?.toString();
+                          if (selection && (event.type === 'copy' || event.type === 'cut')) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }
+                        };
+                        
+                        document.addEventListener('copy', handleContextMenuAction, { once: true });
+                        document.addEventListener('cut', handleContextMenuAction, { once: true });
+                        document.addEventListener('paste', (event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }, { once: true });
+                      }, 0);
                     }}
                     onCopy={(e) => {
                       e.preventDefault();
@@ -1198,10 +1231,26 @@ function EvaluationContent() {
                           return false;
                         }
                       }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return false;
+                      onContextMenu={() => {
+                        // Permitir el menú contextual pero interceptar acciones específicas
+                        
+                        // Crear un observer para interceptar las acciones del menú contextual
+                        setTimeout(() => {
+                          const handleContextMenuAction = (event: Event) => {
+                            const selection = window.getSelection()?.toString();
+                            if (selection && (event.type === 'copy' || event.type === 'cut')) {
+                              event.preventDefault();
+                              event.stopPropagation();
+                            }
+                          };
+                          
+                          document.addEventListener('copy', handleContextMenuAction, { once: true });
+                          document.addEventListener('cut', handleContextMenuAction, { once: true });
+                          document.addEventListener('paste', (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }, { once: true });
+                        }, 0);
                       }}
                       onCopy={(e) => {
                         e.preventDefault();

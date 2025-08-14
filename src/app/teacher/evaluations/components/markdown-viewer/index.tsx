@@ -14,17 +14,12 @@ interface MarkdownViewerProps {
 }
 
 export const MarkdownViewer = ({ content }: MarkdownViewerProps) => {
-  // Puedes personalizar estilos aquí si no tienes useMarkdownConfig
   const viewerRef = useRef<HTMLDivElement>(null);
 
   return (
     <div 
       ref={viewerRef}
       className="absolute inset-0 mx-3 sm:mx-4"
-      style={{
-        userSelect: 'none',
-        WebkitUserSelect: 'none'
-      }}
     >
       <div className="h-full w-full border border-input rounded-md bg-transparent shadow-xs overflow-hidden">
         <MDPreview
@@ -37,16 +32,7 @@ export const MarkdownViewer = ({ content }: MarkdownViewerProps) => {
             borderRadius: '0',
             backgroundColor: 'transparent'
           }}
-          disableCopy={true}
-        />
-        {/* Capa transparente para prevenir interacciones */}
-        <div 
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 10,
-            pointerEvents: 'none'
-          }}
+          className="prose prose-sm max-w-none dark:prose-invert"
         />
       </div>
     </div>

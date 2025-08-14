@@ -1,7 +1,28 @@
 import { auth } from "@/auth";
 import Link from 'next/link';
-import { getSystemActivityStats } from "./reports/actions";
-import { Users, FileText, Calendar, Send, ArrowRight, BarChart3, Settings } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { Users, FileText, Calendar, Send, ArrowRight, Settings } from "lucide-react";
+
+async function getSystemActivityStats() {
+  const [
+    totalUsers,
+    totalEvaluations,
+    totalSchedules,
+    totalSubmissions,
+  ] = await prisma.$transaction([
+    prisma.user.count(),
+    prisma.evaluation.count(),
+    prisma.attempt.count(),
+    prisma.submission.count(),
+  ]);
+
+  return {
+    totalUsers,
+    totalEvaluations,
+    totalSchedules,
+    totalSubmissions,
+  };
+}
 
 export default async function AdminDashboard() {
   const session = await auth();
@@ -40,12 +61,6 @@ export default async function AdminDashboard() {
       icon: <Users className="h-6 w-6 text-primary" />,
       title: "Gestionar Usuarios",
       description: "Administra roles, permisos y límites."
-    },
-    {
-      href: "/admin/reports",
-      icon: <BarChart3 className="h-6 w-6 text-green-500" />,
-      title: "Ver Reportes",
-      description: "Analiza el uso y la integridad del sistema."
     },
     {
       href: "/admin/settings",

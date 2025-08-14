@@ -9,11 +9,11 @@ export default function A9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0Layout({
 }) {
   useEffect(() => {
     // Función para deshabilitar el menú contextual
-    const disableContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    };
+    // const disableContextMenu = (e: MouseEvent) => {
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    //   return false;
+    // };
 
     // Función para deshabilitar teclas de acceso rápido
     const disableKeyboardShortcuts = (e: KeyboardEvent) => {
@@ -67,7 +67,7 @@ export default function A9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0Layout({
     };
 
     // Agregar event listeners
-    document.addEventListener('contextmenu', disableContextMenu);
+    // document.addEventListener('contextmenu', disableContextMenu);
     document.addEventListener('keydown', disableKeyboardShortcuts);
     document.addEventListener('selectstart', disableTextSelection);
     document.addEventListener('dragstart', disableDragAndDrop);
@@ -86,7 +86,7 @@ export default function A9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0Layout({
 
     // Cleanup function
     return () => {
-      document.removeEventListener('contextmenu', disableContextMenu);
+      // document.removeEventListener('contextmenu', disableContextMenu);
       document.removeEventListener('keydown', disableKeyboardShortcuts);
       document.removeEventListener('selectstart', disableTextSelection);
       document.removeEventListener('dragstart', disableDragAndDrop);
