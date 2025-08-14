@@ -34,9 +34,9 @@ export default function DownloadPage() {
       name: "Windows",
       icon: Monitor,
       version: "v1.0.0",
-      size: "45.2 MB",
+      size: "16.2 MB",
       requirements: "Windows 10 o superior",
-      downloadUrl: "https://drive.google.com/file/d/1h8Pmxs4RA5ajaO1zgRmhEWgmNKJ7pxG4/view?usp=sharing",
+      downloadUrl: "https://drive.google.com/file/d/1JLN_UAftVdlnBLtlhlZS-suJ98TJROfL/view?usp=sharing",
       color: "bg-blue-500",
       description: "Aplicación de escritorio para Windows 10, 11 (64-bit)"
     },
