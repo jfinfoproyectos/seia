@@ -7,6 +7,15 @@ import { RotateCw } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
+// Función para convertir Date a formato datetime-local
+function formatDateTimeLocal(date: Date | string): string {
+  const d = new Date(date);
+  // Ajustar por la zona horaria local
+  const offset = d.getTimezoneOffset();
+  const localDate = new Date(d.getTime() - (offset * 60 * 1000));
+  return localDate.toISOString().slice(0, 16);
+}
+
 interface Evaluation {
   id: number;
   title: string;
@@ -36,8 +45,8 @@ export function ScheduleForm({ onSave, onCancel, initialData }: ScheduleFormProp
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [evaluationId, setEvaluationId] = useState(initialData?.evaluationId ? String(initialData.evaluationId) : '');
   const [uniqueCode, setUniqueCode] = useState(initialData?.uniqueCode || (!initialData ? generateCode() : ''));
-  const [startTime, setStartTime] = useState(initialData?.startTime || '');
-  const [endTime, setEndTime] = useState(initialData?.endTime || '');
+  const [startTime, setStartTime] = useState(initialData?.startTime ? formatDateTimeLocal(initialData.startTime) : '');
+  const [endTime, setEndTime] = useState(initialData?.endTime ? formatDateTimeLocal(initialData.endTime) : '');
 
   // Cargar evaluaciones al montar
   useEffect(() => {
@@ -105,4 +114,4 @@ export function ScheduleForm({ onSave, onCancel, initialData }: ScheduleFormProp
       </div>
     </form>
   );
-} 
+}

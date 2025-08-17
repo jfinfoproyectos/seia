@@ -9,7 +9,7 @@ import { LANGUAGE_OPTIONS } from '@/lib/constants/languages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 
-import { AlertCircle, CheckCircle, Clock, HelpCircle, Loader2, Send, Sparkles, XCircle, PenTool, MessageSquare } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, HelpCircle, Loader2, Send, Sparkles, XCircle, PenTool, MessageSquare, RefreshCw } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ThemeToggle from '@/components/theme/ThemeToggle'
@@ -99,6 +99,7 @@ function EvaluationContent() {
   const [isPageHidden, setIsPageHidden] = useState(false);
   // Variables de estado para pestañas eliminadas - solo modo columnas;
   const [lastFeedback, setLastFeedback] = useState<{[questionId: number]: {success: boolean; message: string; details?: string; grade?: number}} | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Usar el hook para manejar la navegación de preguntas
   const {
@@ -157,8 +158,13 @@ function EvaluationContent() {
     startTime: evaluation?.startTime,
     onTimeExpired: () => {
       // Enviar automáticamente cuando el tiempo expire
+      console.log('⏰ Tiempo expirado - Ejecutando callback');
+      console.log('📊 handleSubmitEvaluationRef disponible:', !!handleSubmitEvaluationRef.current);
       if (handleSubmitEvaluationRef.current) {
+        console.log('✅ Ejecutando handleSubmitEvaluation automáticamente');
         handleSubmitEvaluationRef.current();
+      } else {
+        console.error('❌ handleSubmitEvaluationRef.current no está disponible');
       }
     }
   });
@@ -363,21 +369,108 @@ function EvaluationContent() {
     }
   }, [evaluation, currentQuestionIndex, lastFeedback])
 
+  // Función para actualizar/recargar la evaluación
+  const refreshEvaluation = useCallback(async () => {
+    if (!uniqueCode || !email || !firstName || !lastName || refreshing) {
+      return;
+    }
+
+    setRefreshing(true);
+    
+    try {
+      // Importar las acciones del servidor
+      const { getAttemptByUniqueCode, getAnswersBySubmissionId } = await import('./actions');
+
+      // Obtener los datos actualizados del intento
+      const attemptResult = await getAttemptByUniqueCode(uniqueCode, email);
+
+      if (!attemptResult.success || !attemptResult.attempt || !attemptResult.evaluation) {
+        console.error('Error al actualizar la evaluación:', attemptResult.error);
+        return;
+      }
+
+      const { attempt, evaluation: evaluationData } = attemptResult;
+
+      // Actualizar los datos de la evaluación
+      const formattedEvaluation: EvaluationData = {
+        id: evaluationData.id,
+        title: evaluationData.title,
+        description: evaluationData.description || undefined,
+        helpUrl: evaluationData.helpUrl || undefined,
+        questions: evaluationData.questions,
+        startTime: attempt.startTime,
+        endTime: attempt.endTime
+      };
+
+      setEvaluation(formattedEvaluation);
+
+      // Recargar las respuestas si hay un submissionId
+      if (submissionId) {
+        const answersResult = await getAnswersBySubmissionId(submissionId);
+        
+        const questions = evaluationData.questions || [];
+        let updatedAnswers = questions.map(question => ({
+          questionId: question.id,
+          answer: '',
+          evaluated: false,
+          score: null as number | null
+        }));
+
+        if (answersResult.success && answersResult.answers) {
+          updatedAnswers = updatedAnswers.map(defaultAnswer => {
+            const savedAnswer = answersResult.answers.find(a => a.questionId === defaultAnswer.questionId);
+            if (savedAnswer) {
+              return {
+                ...defaultAnswer,
+                answer: savedAnswer.answer || '',
+                score: savedAnswer.score,
+                evaluated: savedAnswer.score !== null
+              };
+            }
+            return defaultAnswer;
+          });
+        }
+
+        setAnswers(updatedAnswers);
+      }
+
+      // Limpiar estados relacionados con evaluaciones
+      setEvaluationResult(null);
+      setLastFeedback(null);
+      
+    } catch (error) {
+      console.error('Error al actualizar la evaluación:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [uniqueCode, email, firstName, lastName, submissionId, refreshing]);
+
   // Enviar la evaluación completa
   const handleSubmitEvaluation = useCallback(async () => {
-    if (!evaluation || !submissionId) return;
+    console.log('🚀 handleSubmitEvaluation ejecutado');
+    console.log('📋 Estado:', { evaluation: !!evaluation, submissionId });
+    
+    if (!evaluation || !submissionId) {
+      console.log('❌ Condiciones no cumplidas para envío');
+      return;
+    }
 
     try {
+      console.log('📤 Enviando evaluación...');
       const result = await submitEvaluation(submissionId);
+      console.log('📥 Resultado:', result);
+      
       if (result.success) {
+        console.log('✅ Evaluación enviada exitosamente, redirigiendo...');
         // Redirigir a la página de reporte con los datos por query params
         router.push(`/student/report?name=${encodeURIComponent(firstName + ' ' + lastName)}&grade=${result.submission?.score ?? ''}&date=${encodeURIComponent(new Date().toLocaleString())}`)
         return;
       } else {
+        console.log('❌ Error en resultado:', result.error);
         setErrorMessage(result.error || 'Error al enviar la evaluación');
       }
     } catch (error) {
-      console.error('Error al enviar la evaluación:', error);
+      console.error('💥 Excepción al enviar la evaluación:', error);
       setErrorMessage('Error al enviar la evaluación');
     }
   }, [evaluation, submissionId, router, firstName, lastName]);

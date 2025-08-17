@@ -107,8 +107,22 @@ export function SchedulesTable({
                     </Button>
                   </div>
                 </td>
-                <td className="p-2">{new Date(a.startTime).toLocaleString()}</td>
-                <td className="p-2">{new Date(a.endTime).toLocaleString()}</td>
+                <td className="p-2">{new Date(a.startTime).toLocaleString('es-ES', { 
+                  year: 'numeric', 
+                  month: '2-digit', 
+                  day: '2-digit', 
+                  hour: 'numeric', 
+                  minute: '2-digit', 
+                  hour12: true 
+                })}</td>
+                <td className="p-2">{new Date(a.endTime).toLocaleString('es-ES', { 
+                  year: 'numeric', 
+                  month: '2-digit', 
+                  day: '2-digit', 
+                  hour: 'numeric', 
+                  minute: '2-digit', 
+                  hour12: true 
+                })}</td>
                 <td className="p-2">{a._count.submissions}</td>
                 <td className="p-2 text-right">
                   <div className="flex gap-2 justify-end">

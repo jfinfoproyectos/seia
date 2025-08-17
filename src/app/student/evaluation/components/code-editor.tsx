@@ -113,7 +113,7 @@ export const CodeEditor = ({ value, onChange, language, height = '100%' }: CodeE
 
   return (
     <div className="absolute inset-0 mx-3 sm:mx-4">
-      <div className="w-full h-full border border-input rounded-md bg-transparent shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-1 focus-within:ring-ring overflow-hidden relative">
+      <div className="w-full h-full border border-input rounded-md bg-transparent shadow-xs transition-[color,box-shadow] focus-within:border-ring overflow-hidden relative">
         <MonacoEditor
           height={height}
           language={language}

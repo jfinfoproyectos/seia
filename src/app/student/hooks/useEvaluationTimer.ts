@@ -32,13 +32,15 @@ export function useEvaluationTimer({
     if (!endTime) return
 
     const endTimeUTC = toUTC(endTime).getTime()
+    let hasExpired = false
     
     const updateTimer = () => {
       const now = toUTC(new Date()).getTime()
       const diff = Math.max(0, endTimeUTC - now)
       setTimeRemaining(diff)
 
-      if (diff <= 0 && !isTimeExpired) {
+      if (diff <= 0 && !hasExpired) {
+        hasExpired = true
         setIsTimeExpired(true)
         // Llamar la función de callback cuando el tiempo expire
         if (onTimeExpiredRef.current) {
@@ -51,7 +53,7 @@ export function useEvaluationTimer({
     const timerId = setInterval(updateTimer, 1000)
 
     return () => clearInterval(timerId)
-  }, [endTime, isTimeExpired])
+  }, [endTime])
 
   // Calcular el porcentaje de progreso basado en el tiempo transcurrido
   const progressPercentage = (() => {

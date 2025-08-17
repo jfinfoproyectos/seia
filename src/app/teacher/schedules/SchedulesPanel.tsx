@@ -436,8 +436,8 @@ export function SchedulesPanel() {
           initialData={editAttempt ? {
             evaluationId: editAttempt.evaluationId,
             uniqueCode: editAttempt.uniqueCode,
-            startTime: new Date(editAttempt.startTime).toISOString().slice(0, 16),
-            endTime: new Date(editAttempt.endTime).toISOString().slice(0, 16),           
+            startTime: editAttempt.startTime.toString(),
+            endTime: editAttempt.endTime.toString(),           
           } : undefined}
         />
       ) : (
