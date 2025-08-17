@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-export default function studentLayout({
+export default function StudentLayout({
   children,
 }: {
   children: React.ReactNode;

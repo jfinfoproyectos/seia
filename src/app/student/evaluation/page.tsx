@@ -9,7 +9,7 @@ import { LANGUAGE_OPTIONS } from '@/lib/constants/languages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 
-import { AlertCircle, CheckCircle, Clock, HelpCircle, Loader2, Send, Sparkles, XCircle, PenTool, Columns, MessageSquare } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, HelpCircle, Loader2, Send, Sparkles, XCircle, PenTool, MessageSquare } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ThemeToggle from '@/components/theme/ThemeToggle'
@@ -139,7 +139,7 @@ function EvaluationContent() {
   useFocusRedirect();
 
   // Usar el hook para interceptar operaciones de portapapeles
-  const clipboardInterceptor = useClipboardInterceptor({
+  useClipboardInterceptor({
     enabled: true, // Habilitar automáticamente durante la evaluación
     warningMessage: "No es posible pegar en esta aplicación. ¡Inténtalo por ti mismo!",
     updateInterval: 100 // Actualizar 

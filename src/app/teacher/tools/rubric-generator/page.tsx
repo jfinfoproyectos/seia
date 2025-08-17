@@ -6,6 +6,13 @@ import { Input } from "@/components/ui/input";
 import { generateRubricWithGemini, RubricResult, RubricCriterion, corregirRedaccionCriterioRubrica } from "@/lib/gemini-rubric-generator";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+
+// Interface para el documento PDF con propiedades de autoTable
+interface PDFDocumentWithAutoTable extends jsPDF {
+  lastAutoTable?: {
+    finalY: number;
+  };
+}
 import { Trash2, Wand2, PlusCircle, Plus, Minus, ArrowUp, ArrowDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -70,8 +77,7 @@ export default function RubricGeneratorPanel() {
         headStyles: { fillColor: [41, 128, 185] },
         styles: { fontSize: 10 },
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      y = (doc as any).lastAutoTable.finalY + 8;
+      y = (doc as PDFDocumentWithAutoTable).lastAutoTable?.finalY ? (doc as PDFDocumentWithAutoTable).lastAutoTable!.finalY + 8 : y + 20;
     });
     if (editRubric.observaciones) {
       doc.setFontSize(11);

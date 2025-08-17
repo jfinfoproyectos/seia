@@ -1,6 +1,6 @@
 {
-  "name": "seiae",
-  "version": "0.1.0",
+  "name": "seia",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

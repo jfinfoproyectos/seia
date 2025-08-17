@@ -101,8 +101,8 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
               <Button size="lg" className="rounded-full px-8 blur-effect group" asChild>
-                <a href="/download" className="flex items-center gap-2">
-                  Descargar Aplicación para Estudiantes
+                <a href="/student" className="flex items-center gap-2">
+                  Acceso para Estudiantes
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </a>
               </Button>
@@ -218,7 +218,7 @@ export default function Home() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center pt-4">
             <Button size="lg" className="rounded-full px-8 blur-effect" asChild>
-              <a href="/download">Descargar Aplicación para Estudiantes</a>
+              <a href="/student">Acceso para Estudiantes</a>
             </Button>
           </div>
         </section>
