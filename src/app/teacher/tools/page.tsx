@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { BarChart3, FileText, StickyNote } from 'lucide-react';
+import { BarChart3, FileText, StickyNote, Sparkles } from 'lucide-react';
 
 const tools = [
 	{
@@ -53,6 +53,13 @@ const tools = [
 			'Busca forks de repositorios educativos, evalúa automáticamente las actividades de los estudiantes usando IA, genera reportes PDF individuales y exporta calificaciones a Excel.',
 		icon: <FileText className="h-8 w-8 text-gray-500" />,
 		href: '/teacher/tools/github-forks',
+	},
+	{
+		name: 'PromptMaster',
+		description:
+			'Herramienta interactiva para crear prompts personalizados para modelos de IA. Genera prompts efectivos usando diferentes tipos y técnicas avanzadas.',
+		icon: <Sparkles className="h-8 w-8 text-purple-500" />,
+		href: '/teacher/tools/prompt-master',
 	},
 ];
 

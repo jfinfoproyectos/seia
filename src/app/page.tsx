@@ -106,6 +106,12 @@ export default function Home() {
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </a>
               </Button>
+              <Button size="lg" className="rounded-full px-8 blur-effect group" asChild>
+                <a href="/playground" className="flex items-center gap-2">
+                  Playground de Práctica
+                  <Code className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </a>
+              </Button>
             </div>
           </div>
           <div className="flex-1 relative h-[400px] w-full">
