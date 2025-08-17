@@ -24,18 +24,7 @@ export default function StudentEntryPage() {
   const { saveStudentData, clearStudentData } = useStudentData()
   const { mounted, restoreTheme } = useThemeManagement()
 
-  // Funciones de normalización
-  const normalizeNameField = (name: string): string => {
-    return name
-      .trim()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ')
-  }
 
-  const normalizeEmail = (email: string): string => {
-    return email.trim().toLowerCase()
-  }
   
   // Restaurar el tema seleccionado al cargar la página
   useEffect(() => {

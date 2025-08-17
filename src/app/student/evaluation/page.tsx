@@ -9,7 +9,7 @@ import { LANGUAGE_OPTIONS } from '@/lib/constants/languages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 
-import { AlertCircle, CheckCircle, Clock, HelpCircle, Loader2, Send, Sparkles, XCircle, PenTool, MessageSquare, RefreshCw } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, HelpCircle, Loader2, Send, Sparkles, XCircle, PenTool, MessageSquare } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ThemeToggle from '@/components/theme/ThemeToggle'
@@ -99,7 +99,6 @@ function EvaluationContent() {
   const [isPageHidden, setIsPageHidden] = useState(false);
   // Variables de estado para pestañas eliminadas - solo modo columnas;
   const [lastFeedback, setLastFeedback] = useState<{[questionId: number]: {success: boolean; message: string; details?: string; grade?: number}} | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
   // Usar el hook para manejar la navegación de preguntas
   const {
@@ -369,81 +368,7 @@ function EvaluationContent() {
     }
   }, [evaluation, currentQuestionIndex, lastFeedback])
 
-  // Función para actualizar/recargar la evaluación
-  const refreshEvaluation = useCallback(async () => {
-    if (!uniqueCode || !email || !firstName || !lastName || refreshing) {
-      return;
-    }
 
-    setRefreshing(true);
-    
-    try {
-      // Importar las acciones del servidor
-      const { getAttemptByUniqueCode, getAnswersBySubmissionId } = await import('./actions');
-
-      // Obtener los datos actualizados del intento
-      const attemptResult = await getAttemptByUniqueCode(uniqueCode, email);
-
-      if (!attemptResult.success || !attemptResult.attempt || !attemptResult.evaluation) {
-        console.error('Error al actualizar la evaluación:', attemptResult.error);
-        return;
-      }
-
-      const { attempt, evaluation: evaluationData } = attemptResult;
-
-      // Actualizar los datos de la evaluación
-      const formattedEvaluation: EvaluationData = {
-        id: evaluationData.id,
-        title: evaluationData.title,
-        description: evaluationData.description || undefined,
-        helpUrl: evaluationData.helpUrl || undefined,
-        questions: evaluationData.questions,
-        startTime: attempt.startTime,
-        endTime: attempt.endTime
-      };
-
-      setEvaluation(formattedEvaluation);
-
-      // Recargar las respuestas si hay un submissionId
-      if (submissionId) {
-        const answersResult = await getAnswersBySubmissionId(submissionId);
-        
-        const questions = evaluationData.questions || [];
-        let updatedAnswers = questions.map(question => ({
-          questionId: question.id,
-          answer: '',
-          evaluated: false,
-          score: null as number | null
-        }));
-
-        if (answersResult.success && answersResult.answers) {
-          updatedAnswers = updatedAnswers.map(defaultAnswer => {
-            const savedAnswer = answersResult.answers.find(a => a.questionId === defaultAnswer.questionId);
-            if (savedAnswer) {
-              return {
-                ...defaultAnswer,
-                answer: savedAnswer.answer || '',
-                score: savedAnswer.score,
-                evaluated: savedAnswer.score !== null
-              };
-            }
-            return defaultAnswer;
-          });
-        }
-
-        setAnswers(updatedAnswers);
-      }
-
-      // Limpiar estados relacionados con evaluaciones
-      setEvaluationResult(null);
-      setLastFeedback(null);
-      
-    } catch (error) {
-      console.error('Error al actualizar la evaluación:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [uniqueCode, email, firstName, lastName, submissionId, refreshing]);
 
   // Enviar la evaluación completa
   const handleSubmitEvaluation = useCallback(async () => {
