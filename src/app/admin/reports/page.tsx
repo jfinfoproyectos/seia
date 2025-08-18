@@ -224,7 +224,7 @@ export default async function ReportsPage() {
                     <TableRow key={stat.evaluationId}>
                       <TableCell className="font-medium">{stat.evaluationTitle}</TableCell>
                       <TableCell className="text-muted-foreground">{stat.authorName}</TableCell>
-                      <TableCell className="text-right font-mono">{stat.averageScore.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-mono">{stat.averageScore.toFixed(1)}</TableCell>
                     </TableRow>
                   ))
                 ) : (

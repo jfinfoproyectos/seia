@@ -502,6 +502,19 @@ export async function evaluateIndividualActivity(
     };
   } catch (error) {
     console.error('Error al evaluar actividad individual:', error);
+    
+    // Si es un error de cuota de Gemini (429), lo propagamos para que se maneje en el nivel superior
+    if (error instanceof Error && (
+      error.message.includes('429') ||
+      error.message.includes('Resource has been exhausted') ||
+      error.message.includes('Resource exhausted') ||
+      error.message.includes('RESOURCE_EXHAUSTED') ||
+      error.message.includes('exceeded your current quota') ||
+      error.message.includes('check quota')
+    )) {
+      throw error;
+    }
+    
     return {
       activityDescription,
       solutionFile,
@@ -519,6 +532,7 @@ export async function evaluateIndividualActivity(
  * @param activities Array de actividades del activities.json
  * @param githubToken Token de GitHub (opcional)
  * @param delayBetweenActivities Delay en segundos entre cada evaluación de actividad (por defecto 0)
+ * @param onProgress Callback para reportar progreso (opcional)
  * @returns Evaluación comprehensiva del fork
  */
 export async function evaluateComprehensiveFork(
@@ -526,13 +540,20 @@ export async function evaluateComprehensiveFork(
   studentName: string,
   activities: ActivitySolution[],
   githubToken?: string,
-  delayBetweenActivities: number = 0
+  delayBetweenActivities: number = 0,
+  onProgress?: (current: number, total: number) => void
 ): Promise<ComprehensiveForkEvaluation> {
   const activityEvaluations: IndividualActivityEvaluation[] = [];
   
   // Evaluar cada actividad individualmente con delay configurable
   for (let i = 0; i < activities.length; i++) {
     const activity = activities[i];
+    
+    // Reportar progreso antes de evaluar cada actividad
+    if (onProgress) {
+      onProgress(i, activities.length);
+    }
+    
     const evaluation = await evaluateIndividualActivity(
       repoUrl,
       studentName,
@@ -541,6 +562,11 @@ export async function evaluateComprehensiveFork(
       githubToken
     );
     activityEvaluations.push(evaluation);
+    
+    // Reportar progreso después de completar cada actividad
+    if (onProgress) {
+      onProgress(i + 1, activities.length);
+    }
     
     // Agregar delay configurable entre cada evaluación de actividad (excepto en la última)
     if (i < activities.length - 1 && delayBetweenActivities > 0) {
@@ -846,6 +872,7 @@ export async function reEvaluateIndividualActivity(
  * @param githubToken Token de GitHub
  * @param forceReEvaluation Si true, fuerza una nueva evaluación aunque ya exista
  * @param delayBetweenActivities Delay en segundos entre cada evaluación de actividad (por defecto 0)
+ * @param onProgress Callback para reportar progreso (opcional)
  * @returns Evaluación comprehensiva del fork
  */
 export async function evaluateComprehensiveForkWithPersistence(
@@ -856,7 +883,8 @@ export async function evaluateComprehensiveForkWithPersistence(
   evaluatedBy: string,
   githubToken: string,
   forceReEvaluation: boolean = false,
-  delayBetweenActivities: number = 0
+  delayBetweenActivities: number = 0,
+  onProgress?: (current: number, total: number) => void
 ): Promise<ComprehensiveForkEvaluation> {
   // Verificar si ya existe una evaluación
   if (!forceReEvaluation) {
@@ -866,8 +894,8 @@ export async function evaluateComprehensiveForkWithPersistence(
     }
   }
   
-  // Realizar nueva evaluación con delay configurable
-  const evaluation = await evaluateComprehensiveFork(forkUrl, studentName, activities, githubToken, delayBetweenActivities);
+  // Realizar nueva evaluación con delay configurable y callback de progreso
+  const evaluation = await evaluateComprehensiveFork(forkUrl, studentName, activities, githubToken, delayBetweenActivities, onProgress);
   
   // Guardar la evaluación
   const saved = await saveEvaluationToRepository(

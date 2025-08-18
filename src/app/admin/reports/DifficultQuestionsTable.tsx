@@ -32,7 +32,7 @@ export function DifficultQuestionsTable({ questions }: DifficultQuestionsTablePr
                 <TableCell>
                   <p className="font-medium">{q.evaluationTitle}</p>
                 </TableCell>
-                <TableCell className="text-right font-mono">{q.averageScore.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-mono">{q.averageScore.toFixed(1)}</TableCell>
                 <TableCell className="text-center">
                   <Button variant="outline" size="sm" onClick={() => setPreviewQuestion(q)}>Ver</Button>
                 </TableCell>
@@ -93,7 +93,7 @@ export function DifficultQuestionsTable({ questions }: DifficultQuestionsTablePr
                         {previewQuestion.averageScore >= 3.0 ? 'Fácil' : previewQuestion.averageScore >= 2.0 ? 'Moderada' : 'Difícil'}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        Promedio: {previewQuestion.averageScore.toFixed(2)}/5.0
+                        Promedio: {previewQuestion.averageScore.toFixed(1)}/5.0
                       </span>
                     </div>
                   </div>
@@ -140,7 +140,7 @@ export function DifficultQuestionsTable({ questions }: DifficultQuestionsTablePr
                 </div>
                 <div className="w-px h-4 bg-border" />
                 <div className="text-sm text-muted-foreground">
-                  Puntuación promedio: {previewQuestion.averageScore.toFixed(2)}/5.0
+                  Puntuación promedio: {previewQuestion.averageScore.toFixed(1)}/5.0
                 </div>
               </div>
               

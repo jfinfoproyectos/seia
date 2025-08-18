@@ -2,13 +2,24 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {  
   ComprehensiveForkEvaluation,
   ActivitySolution,
-  IndividualActivityEvaluation,
   evaluateComprehensiveForkWithPersistence,  
   reEvaluateIndividualActivity
 } from '@/lib/gemini-github-evaluation';
+import { useToast } from '@/components/ui/use-toast';
 import { generateForkEvaluationPDF, uploadPDFToRepository, generatePDFFileName } from '@/lib/github-fork-pdf-generator';
 import { exportForksToExcel, generateExcelFileName } from '@/lib/github-fork-excel-exporter';
 
@@ -43,6 +54,7 @@ function decodeBase64Utf8(base64: string) {
 }
 
 export default function GithubForksPage() {
+  const { toast } = useToast();
   const [repo, setRepo] = useState('');
   const [forks, setForks] = useState<GithubFork[]>([])
   const [estudiantes, setEstudiantes] = useState<Record<number, EstudianteInfo | null>>({})
@@ -66,6 +78,10 @@ export default function GithubForksPage() {
   const [bulkEvaluating, setBulkEvaluating] = useState(false) // Para manejar la evaluación masiva
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 }) // Progreso de evaluación masiva
   const [individualProgress, setIndividualProgress] = useState<Record<number, { current: number, total: number }>>({}) // Progreso individual por fork
+  const [showBulkConfirmDialog, setShowBulkConfirmDialog] = useState(false) // Para mostrar el diálogo de confirmación
+  const [showUnratedConfirmDialog, setShowUnratedConfirmDialog] = useState(false) // Para mostrar el diálogo de confirmación de elementos no calificados
+  const [showQuotaErrorDialog, setShowQuotaErrorDialog] = useState(false) // Para mostrar el modal de error de cuota de Gemini
+  const [quotaErrorDetails, setQuotaErrorDetails] = useState({ message: '', currentFork: 0, totalForks: 0 }) // Detalles del error de cuota
   const [requestDelay, setRequestDelay] = useState(5) // Delay entre peticiones en segundos (mínimo 5, por defecto 5)
   // Removed activityDescription state as we'll use activities.json from original repo
 
@@ -115,6 +131,11 @@ export default function GithubForksPage() {
       const evaluation = existingEvaluations[fork.full_name] || evaluations[fork.id];
       return !!evaluation;
     });
+  };
+
+  // Obtener solo los forks filtrados que no han sido evaluados
+  const getUnratedFilteredForks = (): GithubFork[] => {
+    return getFilteredForks().filter(fork => !isEvaluated(fork));
   };
 
   // Cargar evaluaciones existentes del repositorio original
@@ -267,94 +288,10 @@ export default function GithubForksPage() {
     }
   };
 
-  // Función personalizada para evaluar fork con progreso
-  const evaluateComprehensiveForkWithProgress = async (
-    originalRepoUrl: string,
-    forkUrl: string,
-    studentName: string,
-    activities: ActivitySolution[],
-    evaluatedBy: string,
-    githubToken: string,
-    forceReEvaluation: boolean = false,
-    onProgressUpdate?: (current: number, total: number) => void
-  ): Promise<ComprehensiveForkEvaluation> => {
-    // Importar funciones necesarias
-    const { 
-      getExistingEvaluation, 
-      saveEvaluationToRepository, 
-      evaluateIndividualActivity 
-    } = await import('@/lib/gemini-github-evaluation');
 
-    // Verificar si ya existe una evaluación y no se fuerza re-evaluación
-    if (!forceReEvaluation) {
-      const existingEvaluation = await getExistingEvaluation(originalRepoUrl, forkUrl, githubToken);
-      if (existingEvaluation) {
-        return existingEvaluation;
-      }
-    }
-
-    const activityEvaluations: IndividualActivityEvaluation[] = [];
-    
-    // Evaluar cada actividad individualmente con progreso
-    for (let i = 0; i < activities.length; i++) {
-      const activity = activities[i];
-      
-      // Actualizar progreso
-      if (onProgressUpdate) {
-        onProgressUpdate(i, activities.length);
-      }
-      
-      const evaluation = await evaluateIndividualActivity(
-        forkUrl,
-        studentName,
-        activity.activity,
-        activity.solution,
-        githubToken
-      );
-      activityEvaluations.push(evaluation);
-      
-      // Agregar delay configurable entre cada evaluación de actividad (excepto en la última)
-      if (i < activities.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, requestDelay * 1000));
-      }
-    }
-
-    // Progreso final
-    if (onProgressUpdate) {
-      onProgressUpdate(activities.length, activities.length);
-    }
-
-    // Calcular estadísticas generales
-    const totalActivities = activities.length;
-    const completedActivities = activityEvaluations.filter(evaluation => evaluation.fileFound && evaluation.score > 0).length;
-    const totalScore = activityEvaluations.reduce((sum, evaluation) => sum + evaluation.score, 0);
-    const overallScore = totalActivities > 0 ? totalScore / totalActivities : 0;
-
-    // Generar resumen y recomendaciones (funciones helper simples)
-    const summary = `Completó ${completedActivities}/${totalActivities} actividades con una calificación promedio de ${overallScore.toFixed(1)}/5.`;
-    const recommendations = ['Continuar con el buen trabajo'];
-
-    const comprehensiveEvaluation: ComprehensiveForkEvaluation = {
-      repositoryUrl: forkUrl,
-      studentName,
-      activities: activityEvaluations,
-      overallScore,
-      totalActivities,
-      completedActivities,
-      summary,
-      recommendations,
-      evaluatedAt: new Date().toISOString(),
-      evaluatedBy
-    };
-
-    // Guardar la evaluación en el repositorio original
-    await saveEvaluationToRepository(originalRepoUrl, forkUrl, comprehensiveEvaluation, evaluatedBy, githubToken);
-
-    return comprehensiveEvaluation;
-  };
 
   // Función para evaluar todos los forks filtrados con intervalos de 1 segundo
-  const handleBulkEvaluateAllForks = async () => {
+  const handleBulkEvaluateAllForks = () => {
     if (!githubToken) {
       setError('Se requiere un token de GitHub para evaluar forks')
       return
@@ -372,14 +309,17 @@ export default function GithubForksPage() {
     const filteredForks = getFilteredForks()
     
     if (filteredForks.length === 0) {
-      alert('No hay forks filtrados para evaluar')
+      setError('No hay forks filtrados para evaluar')
       return
     }
 
-    const confirmMessage = `¿Estás seguro de que quieres evaluar todos los ${filteredForks.length} forks filtrados? Esto incluye re-evaluar los que ya han sido evaluados.`
-    if (!confirm(confirmMessage)) {
-      return
-    }
+    // Mostrar diálogo de confirmación
+    setShowBulkConfirmDialog(true)
+  }
+
+  const executeBulkEvaluation = async () => {
+    const filteredForks = getFilteredForks()
+    setShowBulkConfirmDialog(false)
 
     setBulkEvaluating(true)
     setBulkProgress({ current: 0, total: filteredForks.length })
@@ -428,18 +368,28 @@ export default function GithubForksPage() {
           console.error(`Error al evaluar fork ${fork.full_name}:`, error)
           
           // Manejo específico de errores de cuota de Gemini API
-          if (error instanceof Error && error.message.includes('429')) {
+          if (error instanceof Error && (
+            error.message.includes('429') ||
+            error.message.includes('Resource has been exhausted') ||
+            error.message.includes('Resource exhausted') ||
+            error.message.includes('RESOURCE_EXHAUSTED') ||
+            error.message.includes('exceeded your current quota') ||
+            error.message.includes('check quota')
+          )) {
             const quotaError = `⚠️ Límite de cuota de Gemini API alcanzado (200 solicitudes/día en plan gratuito). 
             
 Opciones:
 • Esperar hasta mañana (se reinicia a medianoche hora del Pacífico)
 • Actualizar a plan de pago para obtener más cuota
-• Aumentar el delay entre evaluaciones para conservar cuota
-
-Evaluación detenida en fork ${i + 1} de ${filteredForks.length}.`
+• Aumentar el delay entre evaluaciones para conservar cuota`
             
+            setQuotaErrorDetails({
+              message: quotaError,
+              currentFork: i + 1,
+              totalForks: filteredForks.length
+            })
+            setShowQuotaErrorDialog(true)
             setError(quotaError)
-            alert(quotaError)
             break // Detener la evaluación masiva
           }
           
@@ -447,10 +397,135 @@ Evaluación detenida en fork ${i + 1} de ${filteredForks.length}.`
         }
       }
 
-      alert(`Evaluación masiva completada. Se evaluaron ${filteredForks.length} forks.`)
+      toast({
+        title: "Evaluación masiva completada",
+        description: `Se evaluaron ${filteredForks.length} forks exitosamente.`,
+        variant: "default"
+      })
     } catch (error) {
       console.error('Error en evaluación masiva:', error)
       setError('Error en evaluación masiva: ' + (error instanceof Error ? error.message : 'Error desconocido'))
+    } finally {
+      setBulkEvaluating(false)
+      setBulkProgress({ current: 0, total: 0 })
+    }
+  }
+
+  // Función para evaluar solo los elementos no calificados
+  const handleBulkEvaluateUnratedForks = () => {
+    if (!githubToken) {
+      setError('Se requiere un token de GitHub para evaluar forks')
+      return
+    }
+
+    if (!areActivitiesReady()) {
+      if (loadingActivities) {
+        setError('Las actividades aún se están cargando. Por favor espera un momento.')
+      } else {
+        setError('No se encontró información de actividades válida en activities.json del repositorio original')
+      }
+      return
+    }
+
+    const unratedForks = getUnratedFilteredForks()
+    
+    if (unratedForks.length === 0) {
+      setError('No hay forks sin evaluar en los elementos filtrados')
+      return
+    }
+
+    // Mostrar diálogo de confirmación
+    setShowUnratedConfirmDialog(true)
+  }
+
+  const executeUnratedEvaluation = async () => {
+    const unratedForks = getUnratedFilteredForks()
+    setShowUnratedConfirmDialog(false)
+
+    setBulkEvaluating(true)
+    setBulkProgress({ current: 0, total: unratedForks.length })
+    setError('')
+
+    try {
+      for (let i = 0; i < unratedForks.length; i++) {
+        const fork = unratedForks[i]
+        setBulkProgress({ current: i + 1, total: unratedForks.length })
+
+        try {
+          const studentInfo = estudiantes[fork.id]
+          const studentName = studentInfo && !studentInfo.error 
+            ? `${studentInfo.nombres || ''} ${studentInfo.apellidos || ''}`.trim() || 'Estudiante desconocido'
+            : 'Estudiante desconocido'
+
+          const repoUrl = fork.full_name
+
+          // Evaluar el fork
+          const evaluation = await evaluateComprehensiveForkWithPersistence(
+            originalRepoUrl!,
+            repoUrl,
+            studentName,
+            activitiesMap as ActivitySolution[],
+            'Sistema de Evaluación de No Calificados',
+            githubToken,
+            false, // No forzar re-evaluación para elementos no calificados
+            requestDelay // Agregar delay configurable entre actividades
+          )
+
+          // Actualizar estados locales
+          setEvaluations(prev => ({
+            ...prev,
+            [fork.id]: evaluation
+          }))
+
+          setExistingEvaluations(prev => ({
+            ...prev,
+            [repoUrl]: evaluation
+          }))
+
+          // Generar y subir PDF del reporte
+          await generateAndUploadPDF(fork, evaluation)
+
+        } catch (error) {
+          console.error(`Error al evaluar fork ${fork.full_name}:`, error)
+          
+          // Manejo específico de errores de cuota de Gemini API
+          if (error instanceof Error && (
+            error.message.includes('429') ||
+            error.message.includes('Resource has been exhausted') ||
+            error.message.includes('Resource exhausted') ||
+            error.message.includes('RESOURCE_EXHAUSTED') ||
+            error.message.includes('exceeded your current quota') ||
+            error.message.includes('check quota')
+          )) {
+            const quotaError = `⚠️ Límite de cuota de Gemini API alcanzado (200 solicitudes/día en plan gratuito). 
+            
+Opciones:
+• Esperar hasta mañana (se reinicia a medianoche hora del Pacífico)
+• Actualizar a plan de pago para obtener más cuota
+• Aumentar el delay entre evaluaciones para conservar cuota`
+            
+            setQuotaErrorDetails({
+              message: quotaError,
+              currentFork: i + 1,
+              totalForks: unratedForks.length
+            })
+            setShowQuotaErrorDialog(true)
+            setError(quotaError)
+            break // Detener la evaluación masiva
+          }
+          
+          // Continuar con el siguiente fork en caso de otros errores
+        }
+      }
+
+      toast({
+        title: "Evaluación completada",
+        description: `Evaluación de elementos no calificados completada. Se evaluaron ${unratedForks.length} forks.`,
+        variant: "default"
+      })
+    } catch (error) {
+      console.error('Error en evaluación de elementos no calificados:', error)
+      setError('Error en evaluación de elementos no calificados: ' + (error instanceof Error ? error.message : 'Error desconocido'))
     } finally {
       setBulkEvaluating(false)
       setBulkProgress({ current: 0, total: 0 })
@@ -531,7 +606,14 @@ Evaluación detenida en fork ${i + 1} de ${filteredForks.length}.`
       console.error('Error al re-evaluar actividad:', error)
       
       // Manejo específico de errores de cuota de Gemini API
-      if (error instanceof Error && error.message.includes('429')) {
+      if (error instanceof Error && (
+        error.message.includes('429') ||
+        error.message.includes('Resource has been exhausted') ||
+        error.message.includes('Resource exhausted') ||
+        error.message.includes('RESOURCE_EXHAUSTED') ||
+        error.message.includes('exceeded your current quota') ||
+        error.message.includes('check quota')
+      )) {
         const quotaError = `⚠️ Límite de cuota de Gemini API alcanzado (200 solicitudes/día en plan gratuito).
 
 Opciones:
@@ -571,10 +653,9 @@ Opciones:
     setEvaluatingForks(prev => new Set(prev).add(forkId));
     
     // Inicializar progreso individual
-    const totalActivities = (activitiesMap as ActivitySolution[]).length;
     setIndividualProgress(prev => ({
       ...prev,
-      [forkId]: { current: 0, total: totalActivities }
+      [forkId]: { current: 0, total: (activitiesMap as ActivitySolution[]).length }
     }));
 
     try {
@@ -588,16 +669,16 @@ Opciones:
       // Agregar delay configurable antes de hacer la evaluación
       await new Promise(resolve => setTimeout(resolve, requestDelay * 1000))
       
-      // Función de callback para actualizar progreso
-      const onProgressUpdate = (current: number, total: number) => {
+      // Callback para actualizar progreso individual
+      const onProgress = (current: number, total: number) => {
         setIndividualProgress(prev => ({
           ...prev,
           [forkId]: { current, total }
         }));
       };
       
-      // Usar función personalizada con progreso
-      const evaluation = await evaluateComprehensiveForkWithProgress(
+      // Usar función con persistencia para guardar en evaluations.json
+      const evaluation = await evaluateComprehensiveForkWithPersistence(
         originalRepoUrl!, // Repositorio original
         repoUrl, // Fork a evaluar
         studentName,
@@ -605,7 +686,8 @@ Opciones:
         'Sistema de Evaluación', // evaluatedBy
         githubToken,
         forceReEvaluation, // Forzar re-evaluación si es necesario
-        onProgressUpdate // Callback de progreso
+        requestDelay, // Agregar delay configurable entre actividades
+        onProgress // Callback de progreso
       );
 
       setEvaluations(prev => ({
@@ -626,7 +708,14 @@ Opciones:
       console.error('Error al evaluar fork:', error);
       
       // Manejo específico de errores de cuota de Gemini API
-      if (error instanceof Error && error.message.includes('429')) {
+      if (error instanceof Error && (
+        error.message.includes('429') ||
+        error.message.includes('Resource has been exhausted') ||
+        error.message.includes('Resource exhausted') ||
+        error.message.includes('RESOURCE_EXHAUSTED') ||
+        error.message.includes('exceeded your current quota') ||
+        error.message.includes('check quota')
+      )) {
         const quotaError = `⚠️ Límite de cuota de Gemini API alcanzado (200 solicitudes/día en plan gratuito).
 
 Opciones:
@@ -1050,29 +1139,134 @@ Opciones:
             )}
           </h2>
           <div className="flex items-center gap-3">
-            {/* Botón de evaluación masiva */}
+            {/* Botón de evaluación masiva con AlertDialog */}
             {getFilteredForks().length > 0 && githubToken && areActivitiesReady() && (
-              <button
-                onClick={handleBulkEvaluateAllForks}
-                disabled={bulkEvaluating || loadingExistingEvaluations}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                  bulkEvaluating || loadingExistingEvaluations
-                    ? 'bg-yellow-100 text-yellow-700 cursor-not-allowed'
-                    : 'bg-purple-600 text-white hover:bg-purple-700'
-                }`}
-              >
-                {bulkEvaluating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
-                    Evaluando...
-                  </>
-                ) : (
-                  <>
-                    🚀 Evaluar Todos los Filtrados
-                  </>
-                )}
-              </button>
+              <AlertDialog open={showBulkConfirmDialog} onOpenChange={setShowBulkConfirmDialog}>
+                <AlertDialogTrigger asChild>
+                  <button
+                    onClick={handleBulkEvaluateAllForks}
+                    disabled={bulkEvaluating || loadingExistingEvaluations}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                      bulkEvaluating || loadingExistingEvaluations
+                        ? 'bg-yellow-100 text-yellow-700 cursor-not-allowed'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                    }`}
+                  >
+                    {bulkEvaluating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
+                        Evaluando...
+                      </>
+                    ) : (
+                      <>
+                        🚀 Evaluar Todos los Filtrados
+                      </>
+                    )}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar evaluación masiva</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      ¿Estás seguro de que quieres evaluar todos los {getFilteredForks().length} forks filtrados? Esto incluye re-evaluar los que ya han sido evaluados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={executeBulkEvaluation}>
+                      Evaluar todos
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
+            
+            {/* Botón de evaluación solo elementos no calificados */}
+            {getUnratedFilteredForks().length > 0 && githubToken && areActivitiesReady() && (
+              <AlertDialog open={showUnratedConfirmDialog} onOpenChange={setShowUnratedConfirmDialog}>
+                <AlertDialogTrigger asChild>
+                  <button
+                    onClick={handleBulkEvaluateUnratedForks}
+                    disabled={bulkEvaluating || loadingExistingEvaluations}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                      bulkEvaluating || loadingExistingEvaluations
+                        ? 'bg-yellow-100 text-yellow-700 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {bulkEvaluating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
+                        Evaluando...
+                      </>
+                    ) : (
+                      <>
+                        ⭐ Evaluar Solo No Calificados
+                      </>
+                    )}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar evaluación de elementos no calificados</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      ¿Estás seguro de que quieres evaluar solo los {getUnratedFilteredForks().length} forks filtrados que aún no han sido calificados? Esto excluye los que ya tienen evaluación.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={executeUnratedEvaluation}>
+                      Evaluar no calificados
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            
+            {/* Modal de error de cuota de Gemini */}
+            <AlertDialog open={showQuotaErrorDialog} onOpenChange={setShowQuotaErrorDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    ⚠️ Límite de cuota de Gemini API alcanzado
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-4">
+                    <div className="text-sm text-gray-700">
+                      <p className="mb-3">Se ha alcanzado el límite de cuota de Gemini API (200 solicitudes/día en plan gratuito).</p>
+                      
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                        <p className="text-red-800 font-medium">
+                          Evaluación detenida en fork {quotaErrorDetails.currentFork} de {quotaErrorDetails.totalForks}
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <p className="font-medium text-gray-800">Opciones disponibles:</p>
+                        <ul className="space-y-1 text-sm">
+                          <li className="flex items-start gap-2">
+                            <span className="text-blue-500 mt-0.5">•</span>
+                            <span>Esperar hasta mañana (se reinicia a medianoche hora del Pacífico)</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-blue-500 mt-0.5">•</span>
+                            <span>Actualizar a plan de pago para obtener más cuota</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-blue-500 mt-0.5">•</span>
+                            <span>Aumentar el delay entre evaluaciones para conservar cuota</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setShowQuotaErrorDialog(false)}>
+                    Entendido
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             
             {/* Botón de exportación a Excel */}
             {getEvaluatedForks().length > 0 && (
@@ -1292,13 +1486,13 @@ Opciones:
                           
                           {/* Barra de progreso individual */}
                           {individualProgress[fork.id] && (
-                            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                               <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-medium text-blue-700">
-                                  Evaluando actividad {individualProgress[fork.id].current} de {individualProgress[fork.id].total}
+                                <span className="text-sm font-medium text-blue-800">
+                                  Evaluando actividades...
                                 </span>
-                                <span className="text-xs text-blue-600">
-                                  {Math.round((individualProgress[fork.id].current / individualProgress[fork.id].total) * 100)}%
+                                <span className="text-sm text-blue-600">
+                                  {individualProgress[fork.id].current}/{individualProgress[fork.id].total}
                                 </span>
                               </div>
                               <div className="w-full bg-blue-200 rounded-full h-2">
@@ -1309,11 +1503,8 @@ Opciones:
                                   }}
                                 ></div>
                               </div>
-                              <div className="text-xs text-blue-600 mt-1 text-center">
-                                Evaluando con {requestDelay} segundos de espera entre cada pregunta/actividad (límites API Gemini)
-                              </div>
-                              <div className="text-xs text-green-600 mt-1 text-center">
-                                💡 Contenido vacío se califica automáticamente con 0 (ahorra cuota API)
+                              <div className="text-xs text-blue-600 mt-1">
+                                {Math.round((individualProgress[fork.id].current / individualProgress[fork.id].total) * 100)}% completado
                               </div>
                             </div>
                           )}

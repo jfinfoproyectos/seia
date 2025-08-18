@@ -293,7 +293,7 @@ export default function AudioAnalyzerPage() {
     // @ts-expect-error: lastAutoTable no está tipado en jsPDF
     let y = doc.lastAutoTable.finalY + 10;
     doc.setFontSize(12);
-    doc.text(`Calificación total: ${rubrica.calificacionTotal.toFixed(2)} / 5.0`, 14, y);
+    doc.text(`Calificación total: ${rubrica.calificacionTotal.toFixed(1)} / 5.0`, 14, y);
     y += 8;
     doc.setFontSize(11);
     doc.text('Retroalimentación general:', 14, y);
@@ -459,7 +459,7 @@ export default function AudioAnalyzerPage() {
                 ))}
               </tbody>
             </table>
-            <div className="mb-2"><b>Calificación total:</b> <span className="text-lg font-bold">{rubrica.calificacionTotal.toFixed(2)} / 5.0</span></div>
+            <div className="mb-2"><b>Calificación total:</b> <span className="text-lg font-bold">{rubrica.calificacionTotal.toFixed(1)} / 5.0</span></div>
             <div><b>Retroalimentación general:</b> <span className="text-muted-foreground">{rubrica.retroalimentacionGeneral}</span></div>
           </div>
         )}

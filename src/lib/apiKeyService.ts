@@ -1,10 +1,8 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
 import { auth } from '@/auth';
 import { decrypt } from '@/lib/crypto';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 /**
  * Obtiene la clave de API global encriptada y la devuelve desencriptada.

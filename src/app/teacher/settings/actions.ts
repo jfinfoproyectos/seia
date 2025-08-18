@@ -1,12 +1,10 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { encrypt, decrypt } from '@/lib/crypto';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
-
-const prisma = new PrismaClient();
 
 // Obtener la información del usuario actual
 export async function getCurrentUser() {

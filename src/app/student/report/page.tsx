@@ -4,8 +4,9 @@ import { useSearchParams } from 'next/navigation'
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Suspense } from 'react'
-import { Award, ThumbsUp, Smile, Frown } from 'lucide-react'
+import { Award, ThumbsUp, Smile, Frown, Download } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { generateBasicStudentReportPDF } from '@/lib/student-report-pdf-generator'
 
 function ReportContent() {
   const searchParams = useSearchParams()
@@ -13,6 +14,10 @@ function ReportContent() {
   const grade = searchParams.get('grade') || 'N/A'
   const date = searchParams.get('date') || new Date().toLocaleString()
   const evaluation = searchParams.get('evaluation') || 'Evaluación'
+
+  const handleDownloadPDF = () => {
+    generateBasicStudentReportPDF(name, evaluation, grade, date)
+  }
 
   // Mensaje personalizado según la nota
   let message = '¡Gracias por completar tu evaluación!';
@@ -53,7 +58,7 @@ function ReportContent() {
           <div className="flex flex-col items-center gap-1">
             <span className="text-base text-muted-foreground">Nota</span>
             <Badge variant={badgeColor} className="text-lg px-4 py-1 rounded-full font-bold">
-              {grade !== 'N/A' ? `${grade} / 5.0` : 'Sin calificar'}
+              {grade !== 'N/A' ? `${parseFloat(grade).toFixed(1)} / 5.0` : 'Sin calificar'}
             </Badge>
           </div>
           <div className="mt-2 text-center text-sm text-muted-foreground max-w-md">
@@ -61,6 +66,14 @@ function ReportContent() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col items-center gap-2 pb-6">
+          <Button 
+            className="w-full max-w-xs mb-2" 
+            onClick={handleDownloadPDF}
+            variant="outline"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Descargar Reporte PDF
+          </Button>
           <Button className="w-full max-w-xs" onClick={() => window.location.href = '/student'}>
             Volver al inicio
           </Button>
@@ -76,4 +89,4 @@ export default function ReportPage() {
       <ReportContent />
     </Suspense>
   )
-} 
+}

@@ -1,10 +1,8 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/crypto';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function getGlobalSettings() {
   const settings = await prisma.globalSettings.findFirst();

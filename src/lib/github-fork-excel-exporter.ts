@@ -36,7 +36,7 @@ export function exportForksToExcel(
     'Grupo': data.studentInfo?.grupo || 'N/A',
     'Repositorio': data.fork.full_name,
     'URL': data.fork.html_url,
-    'Puntuación General': data.evaluation.overallScore.toFixed(2),
+    'Puntuación General': data.evaluation.overallScore.toFixed(1),
     'Actividades Completadas': data.evaluation.completedActivities,
     'Total Actividades': data.evaluation.totalActivities,
     'Porcentaje Completado': `${((data.evaluation.completedActivities / data.evaluation.totalActivities) * 100).toFixed(1)}%`,
@@ -56,7 +56,7 @@ export function exportForksToExcel(
         'Descripción': activity.activityDescription,
         'Archivo Solución': activity.solutionFile,
         'Archivo Encontrado': activity.fileFound ? 'Sí' : 'No',
-        'Puntuación': activity.score.toFixed(2),
+        'Puntuación': activity.score.toFixed(1),
         'Retroalimentación': activity.feedback || 'Sin retroalimentación',
       });
     });
@@ -89,7 +89,7 @@ export function exportForksToExcel(
 
   const statisticsData = [
     { 'Métrica': 'Total de Forks Evaluados', 'Valor': totalForks },
-    { 'Métrica': 'Puntuación Promedio', 'Valor': averageScore.toFixed(2) },
+    { 'Métrica': 'Puntuación Promedio', 'Valor': averageScore.toFixed(1) },
     { 'Métrica': 'Total de Actividades', 'Valor': totalActivities },
     { 'Métrica': 'Actividades Completadas', 'Valor': completedActivities },
     { 'Métrica': 'Tasa de Completado (%)', 'Valor': completionRate.toFixed(1) },
