@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { BarChart3, FileText, StickyNote, Sparkles } from 'lucide-react';
+import { BarChart3, FileText, StickyNote, Sparkles, Users } from 'lucide-react';
 
 const tools = [
 	{
@@ -60,6 +60,13 @@ const tools = [
 			'Herramienta interactiva para crear prompts personalizados para modelos de IA. Genera prompts efectivos usando diferentes tipos y técnicas avanzadas.',
 		icon: <Sparkles className="h-8 w-8 text-purple-500" />,
 		href: '/teacher/tools/prompt-master',
+	},
+	{
+		name: 'Analizador de Contribuciones GitHub',
+		description:
+			'Analiza las contribuciones de todos los colaboradores en un repositorio. Muestra porcentajes de aporte, desglose detallado y visualizaciones claras de las métricas de contribución.',
+		icon: <Users className="h-8 w-8 text-indigo-500" />,
+		href: '/teacher/tools/github-contributors',
 	},
 ];
 
