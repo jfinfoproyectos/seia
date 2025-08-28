@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Copy, Sparkles, RefreshCw, Lightbulb, FileText, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { generateOptimizedPrompt } from '@/lib/gemini-prompt-generator';
 
 interface PromptSuggestion {
   type: string;
@@ -70,20 +70,36 @@ export default function PromptMasterPanel() {
     );
   };
 
-  const generatePrompt = async () => {
-    if (!userRequest.trim()) return;
+  const generatePrompt = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    
+    if (!userRequest.trim()) {
+      alert('Por favor, describe lo que quieres lograr con el prompt.');
+      return;
+    }
+    
+    if (!selectedType) {
+      alert('Por favor, selecciona un tipo de prompt.');
+      return;
+    }
     
     setLoading(true);
     try {
-      // Simular generación de prompt (aquí se integraría con Gemini)
-      const mockPrompt = generateMockPrompt(userRequest, selectedType, selectedTechniques);
+      // Generar prompt usando el servicio de Gemini
+      const geminiResult = await generateOptimizedPrompt(
+        userRequest,
+        selectedType,
+        selectedTechniques
+      );
+      
+      console.log('Gemini result:', geminiResult);
       
       const newPrompt: GeneratedPrompt = {
         id: Date.now().toString(),
-        prompt: mockPrompt.prompt,
-        explanation: mockPrompt.explanation,
-        suggestions: mockPrompt.suggestions,
-        testExample: mockPrompt.testExample,
+        prompt: geminiResult.prompt || 'Prompt no disponible',
+        explanation: geminiResult.explanation || 'Explicación no disponible',
+        suggestions: Array.isArray(geminiResult.suggestions) ? geminiResult.suggestions : [],
+        testExample: geminiResult.testExample || 'Ejemplo no disponible',
         timestamp: new Date().toLocaleString()
       };
       
@@ -91,49 +107,14 @@ export default function PromptMasterPanel() {
       setActiveTab('history');
     } catch (error) {
       console.error('Error generating prompt:', error);
+      // Mostrar error al usuario
+      alert('Error al generar el prompt. Por favor, verifica tu conexión y que tengas configurada la API key de Gemini.');
     } finally {
       setLoading(false);
     }
   };
 
-  const generateMockPrompt = (request: string, type: string, techniques: string[]) => {
-    const typeInfo = promptTypes.find(t => t.value === type);
-    // const selectedTechInfo = techniques.map(t => techniques.find(tech => tech === t));
-    
-    let prompt = `Actúa como un experto en ${request}. `;
-    
-    if (type === 'context') {
-      prompt += `Desde tu perspectiva profesional, `;
-    }
-    
-    if (techniques.includes('specificity')) {
-      prompt += `Proporciona una respuesta detallada de aproximadamente 300 palabras, `;
-    }
-    
-    if (techniques.includes('reasoning')) {
-      prompt += `explicando paso a paso tu razonamiento. `;
-    }
-    
-    if (techniques.includes('examples')) {
-      prompt += `Incluye al menos 2 ejemplos concretos. `;
-    }
-    
-    prompt += `Enfócate en ${request} y asegúrate de que tu respuesta sea práctica y aplicable.`;
-    
-    if (techniques.includes('constraints')) {
-      prompt += ` Evita tecnicismos innecesarios y mantén un tono profesional pero accesible.`;
-    }
-    
-    return {
-      prompt,
-      explanation: `Este prompt combina ${typeInfo?.label || 'técnicas generales'} con ${techniques.length} técnicas específicas para obtener una respuesta estructurada y útil.`,
-      suggestions: [
-        { type: typeInfo?.label || 'General', technique: 'Estructura clara', reason: 'Facilita la comprensión' },
-        { type: 'Técnica', technique: 'Especificidad', reason: 'Mejora la precisión de la respuesta' }
-      ],
-      testExample: `Ejemplo de uso: &quot;${prompt.substring(0, 100)}...&quot;`
-    };
-  };
+
 
   const copyToClipboard = async (text: string, id: string) => {
     try {
@@ -265,20 +246,21 @@ export default function PromptMasterPanel() {
                 </div>
 
                 <Button 
+                  type="button"
                   onClick={generatePrompt}
-                  disabled={!userRequest.trim() || loading}
+                  disabled={!userRequest.trim() || !selectedType || loading}
                   className="w-full"
                   size="lg"
                 >
                   {loading ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Generando...
+                      Generando con Gemini...
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      Generar Prompt
+                      Generar Prompt con IA
                     </>
                   )}
                 </Button>
@@ -380,19 +362,19 @@ export default function PromptMasterPanel() {
                       <div className="space-y-4">
                         <div>
                           <Label className="text-sm font-semibold">Prompt:</Label>
-                          <div className="mt-1 p-3 bg-muted rounded-lg">
-                            <code className="text-sm">{prompt.prompt}</code>
+                          <div className="bg-muted p-3 rounded-md mt-2">
+                            <p className="text-sm font-mono whitespace-pre-wrap">{typeof prompt.prompt === 'string' ? prompt.prompt : 'Error: Formato de prompt inválido'}</p>
                           </div>
                         </div>
 
                         <div>
                           <Label className="text-sm font-semibold">Explicación:</Label>
-                          <p className="text-sm text-muted-foreground mt-1">{prompt.explanation}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{prompt.explanation || 'No disponible'}</p>
                         </div>
 
                         <div>
                           <Label className="text-sm font-semibold">Ejemplo de Uso:</Label>
-                          <p className="text-sm text-muted-foreground mt-1">{prompt.testExample}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{prompt.testExample || 'No disponible'}</p>
                         </div>
 
                         <Separator />
@@ -400,11 +382,13 @@ export default function PromptMasterPanel() {
                         <div>
                           <Label className="text-sm font-semibold">Técnicas Aplicadas:</Label>
                           <div className="flex flex-wrap gap-2 mt-2">
-                            {prompt.suggestions.map((suggestion, idx) => (
+                            {prompt.suggestions && Array.isArray(prompt.suggestions) ? prompt.suggestions.map((suggestion, idx) => (
                               <Badge key={idx} variant="secondary">
-                                {suggestion.technique}
+                                {typeof suggestion === 'object' && suggestion.technique ? suggestion.technique : String(suggestion)}
                               </Badge>
-                            ))}
+                            )) : (
+                              <p className="text-sm text-muted-foreground">No hay técnicas disponibles</p>
+                            )}
                           </div>
                         </div>
                       </div>
