@@ -33,6 +33,13 @@ export const MarkdownViewer = ({ content }: MarkdownViewerProps) => {
             backgroundColor: 'transparent'
           }}
           className="prose prose-sm max-w-none dark:prose-invert"
+          components={{
+            a: ({ href, children, ...props }) => (
+              <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                {children}
+              </a>
+            )
+          }}
         />
       </div>
     </div>

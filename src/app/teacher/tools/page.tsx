@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { BarChart3, FileText, StickyNote, Sparkles, Users } from 'lucide-react';
+import { BarChart3, FileText, StickyNote, Sparkles, Users, GitBranch } from 'lucide-react';
 
 const tools = [
 	{
@@ -67,6 +67,13 @@ const tools = [
 			'Analiza las contribuciones de todos los colaboradores en un repositorio. Muestra porcentajes de aporte, desglose detallado y visualizaciones claras de las métricas de contribución.',
 		icon: <Users className="h-8 w-8 text-indigo-500" />,
 		href: '/teacher/tools/github-contributors',
+	},
+	{
+		name: 'Analizador de Repositorios GitHub',
+		description:
+			'Escanea repositorios completos incluyendo estructura de carpetas y archivos. Permite seleccionar elementos específicos y realizar análisis personalizados con IA usando prompts customizados.',
+		icon: <GitBranch className="h-8 w-8 text-emerald-500" />,
+		href: '/teacher/tools/repository-analyzer',
 	},
 ];
 
