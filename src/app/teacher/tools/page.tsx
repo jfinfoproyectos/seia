@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { BarChart3, FileText, StickyNote, Sparkles, Users, GitBranch } from 'lucide-react';
+import { BarChart3, FileText, StickyNote, Sparkles, Users, GitBranch, Workflow, BookOpen } from 'lucide-react';
 
 const tools = [
 	{
@@ -74,6 +74,20 @@ const tools = [
 			'Escanea repositorios completos incluyendo estructura de carpetas y archivos. Permite seleccionar elementos específicos y realizar análisis personalizados con IA usando prompts customizados.',
 		icon: <GitBranch className="h-8 w-8 text-emerald-500" />,
 		href: '/teacher/tools/repository-analyzer',
+	},
+	{
+		name: 'Generador de Gráficos Mermaid',
+		description:
+			'Crea diagramas profesionales usando inteligencia artificial. Genera diagramas de flujo, secuencia, clases, estados y más tipos desde descripciones en lenguaje natural.',
+		icon: <Workflow className="h-8 w-8 text-cyan-500" />,
+		href: '/teacher/tools/mermaid-generator',
+	},
+	{
+		name: 'Generador de Tutoriales',
+		description:
+			'Crea tutoriales educativos completos y personalizados usando IA. Genera contenido estructurado con ejemplos, ejercicios y recursos, optimiza el contenido y exporta en múltiples formatos.',
+		icon: <BookOpen className="h-8 w-8 text-amber-500" />,
+		href: '/teacher/tools/tutorial-generator',
 	},
 ];
 
